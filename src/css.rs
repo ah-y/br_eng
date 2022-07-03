@@ -4,13 +4,13 @@ use crate::Parser;
 
 pub type Specificity = (usize, usize, usize,);
 
-struct Stylesheet {
-   rules: Vec<Rule,>,
+pub struct Stylesheet {
+   pub rules: Vec<Rule,>,
 }
 
 pub struct Rule {
-   selectors:    Vec<Selector,>,
-   declarations: Vec<Declaration,>,
+   pub selectors:    Vec<Selector,>,
+   pub declarations: Vec<Declaration,>,
 }
 
 pub enum Selector {
@@ -34,21 +34,24 @@ pub struct SimpleSelector {
    pub class:    Vec<String,>,
 }
 
-struct Declaration {
-   nam: String,
-   val: Value,
+pub struct Declaration {
+   pub nam: String,
+   pub val: Value,
 }
 
-enum Value {
+#[derive(Clone,)]
+pub enum Value {
    Keyword(String,),
    Length(f32, Unit,),
    ColorValue(Color,),
 }
 
+#[derive(Clone,)]
 enum Unit {
    Px,
 }
 
+#[derive(Clone,)]
 struct Color {
    r: u8,
    g: u8,
