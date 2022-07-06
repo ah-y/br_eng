@@ -50,7 +50,7 @@ impl<'a,> LayoutBox<'a,> {
    }
 
    ///Where a new inline child should go.
-   fn get_inline_container(&'a mut self,) -> &'a mut LayoutBox {
+   fn get_inline_container(mut self,) -> LayoutBox<'a,> {
       match self.box_type {
          BoxType::BlockNode(_,) => {
             //If we've just generated an anonymous block box, keep using it.
@@ -59,7 +59,7 @@ impl<'a,> LayoutBox<'a,> {
                Some(&LayoutBox { box_type: BoxType::AnonymousBlock, .. },) => {}
                _ => self.children.push(LayoutBox::new(BoxType::AnonymousBlock,),),
             }
-            self.children.last_mut().unwrap()
+            self.children.last().unwrap()
          }
          _ => self,
       }
@@ -77,10 +77,11 @@ fn build_layout_tree<'a,>(style_node: &'a style::StyledNode<'a,>,) -> LayoutBox<
       Non => panic!("Root node has display: none."),
    },);
    //Create the descendant boxes.
-   style_node.children.iter().map(|child| match child.display() {
-      Block => &root.children.push(build_layout_tree(&child,),),
-      Inline => &root.get_inline_container().children.push(build_layout_tree(&child,),),
-      Non => &{},
-   },);
+   for child in &style_node.children {
+      match child.display() {
+         Block | Inline => root.get_inline_container().children.push(build_layout_tree(&child,),),
+         _ => {}
+      }
+   }
    root
 }
