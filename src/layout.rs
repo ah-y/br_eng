@@ -78,9 +78,9 @@ fn build_layout_tree<'a,>(style_node: &'a style::StyledNode<'a,>,) -> LayoutBox<
    },);
    //Create the descendant boxes.
    style_node.children.iter().map(|child| match child.display() {
-      Block => root.children.push(build_layout_tree(&child,),),
-      Inline => root.get_inline_container().children.push(build_layout_tree(&child,),),
-      Non => {}
+      Block => &root.children.push(build_layout_tree(&child,),),
+      Inline => &root.get_inline_container().children.push(build_layout_tree(&child,),),
+      Non => &{},
    },);
    root
 }
