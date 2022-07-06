@@ -6,11 +6,38 @@ type PropertyMap = std::collections::HashMap<String, css::Value,>;
 ///Tuple from 'Specificity' and matched 'Rule'
 type MatchedRule<'a,> = (css::Specificity, &'a css::Rule,);
 
+///Layout property
+pub enum Display {
+   Inline,
+   Block,
+   Non,
+}
+
 ///A node with associated style data.
 pub struct StyledNode<'a,> {
    node:             &'a dom::Node, //Pointer to a dom node
    specified_values: PropertyMap,
-   children:         Vec<StyledNode<'a,>,>,
+   pub children:     Vec<StyledNode<'a,>,>,
+}
+
+impl<'a,> StyledNode<'a,> {
+   ///Return the specified value of a property if it exists, otherwise 'Non'.
+   pub fn val(&self, nam: &str,) -> Option<css::Value,> {
+      self.specified_values.get(nam,).map(|v| v.clone(),)
+   }
+
+   ///The value of the 'display' property (defaults to inline).
+   pub fn display(&self,) -> Display {
+      use css::Value;
+      match self.val("display",) {
+         Some(Value::Keyword(s,),) => match &*s {
+            "block" => Display::Block,
+            "none" => Display::Non,
+            _ => Display::Inline,
+         },
+         _ => Display::Inline,
+      }
+   }
 }
 
 ///Tell whether selector matches element
@@ -22,12 +49,9 @@ fn matches(elem: &dom::ElementData, slctr: &css::Selector,) -> bool {
 
 ///If all of class, id, tag_name match, return true
 fn matches_ss(elem: &dom::ElementData, slctr: &css::SimpleSelector,) -> bool {
-   //Check type selector
-   slctr.tag_name.iter().any(|nam| elem.tag_name != *nam,) &&
-   //Check id selector
-   slctr.id.iter().any(|id| elem.id()!=Some(id)) &&
-   //Check class
-   slctr.class.iter().any(|cls| elem.classes().contains(&**cls))
+   slctr.tag_name.iter().any(|nam| elem.tag_name != *nam,) && //Check type selector
+   slctr.id.iter().any(|id| elem.id()!=Some(id)) && //Check id selector
+   slctr.class.iter().any(|cls| elem.classes().contains(&**cls)) //Check class
 }
 
 ///If 'rule' matches 'elem', return a 'MatchedRule'. Otherwise return 'None'.
