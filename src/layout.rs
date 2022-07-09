@@ -1,5 +1,5 @@
 #![allow(unused)]
-use crate::style;
+use crate::{css, style};
 
 ///CSS box model. All sizes are in px.
 #[derive(Default, Clone,)]
@@ -68,10 +68,69 @@ impl<'a,> LayoutBox<'a,> {
          _ => self,
       }
    }
+
+   ///Layout a box and its descendants.
+   fn layout(&mut self, cntin_blck: Dimensions,) {
+      todo!(
+         "------------------------------------------------------
+       [ImplLater]
+           InlineNode & AnonymousBlock
+             ------------------------------------------------------"
+      );
+      match self.box_type {
+         BoxType::BlockNode(_,) => self.layout_block(cntin_blck,),
+         BoxType::InlineNode(_,) => {}
+         BoxType::AnonymousBlock => {}
+      }
+   }
+
+   ///Block's width depends on its parent, height depends on its children
+   fn layout_block(&mut self, cntin_blck: Dimensions,) {
+      //Calculate parent's width at first
+      self.calc_width(cntin_blck,);
+      self.calc_position(cntin_blck,);
+      self.layout_children();
+      //Calculate parent's height at last
+      self.calc_height();
+   }
+
+   ///Calculate width of block
+   fn calc_width(&mut self, cntin_blck: Dimensions,) {
+      let style = self.get_style_node();
+      //'width' has initial value 'auto'
+      let auto = css::Value::Keyword("auto".to_string(),);
+      let mut width = style.val("width",).unwrap_or(auto.clone(),);
+
+      //margin, border, padding have init value 0.
+      let zero = css::Value::Length(0.0, Px,);
+
+      let mut margin_left = style.lookup("margin-left", "margin", &zero,);
+      let mut margin_right = style.lookup("margin-right", "margin", &zero,);
+      let border_left = style.lookup("border-left-width", "border-width", &zero,);
+      let border_right = style.lookup("border-right-width", "border-width", &zero,);
+      let padding_left = style.lookup("padding-left", "padding", &zero,);
+      let padding_right = style.lookup("padding-right", "padding", &zero,);
+
+      let total = [&margin_left, &margin_right, &border_left, &border_right, &padding_left, &padding_right, &width,]
+         .iter()
+         .map(|v| v.to_px(),)
+         .sum();
+      //if width!=auto & total is wider than container, treat auto margins as 0.
+      if width != auto && total > cntin_blck.content.width {
+         if margin_left == auto {
+            margin_left = css::Value::Length(0.0, Px,);
+         }
+         if margin_right == auto {
+            margin_right = css::Value::Length(0.0, Px,);
+         }
+      }
+      //if 'flow' is +, it's underflow. 'flow' is -, it's overflow.
+      let flow = cntin_blck.content.width - total;
+   }
 }
 
-///Build the tree of LayoutBoxes,
-///but don't perform any layout calculations yet.
+///Build the tree of LayoutBoxes, but don't perform any layout calculations
+/// yet.
 fn build_layout_tree<'a,>(style_node: &'a style::StyledNode<'a,>,) -> LayoutBox<'a,> {
    use {style::Display::*, BoxType::*};
    //Create the root box.

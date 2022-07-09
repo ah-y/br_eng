@@ -1,4 +1,4 @@
-  #![allow(unused)]
+#![allow(unused)]
 
 use crate::Parser;
 
@@ -42,7 +42,7 @@ pub struct Declaration {
 #[derive(Clone,)]
 pub enum Value {
    Keyword(String,),
-   Length(f32, Unit,),
+   Length(f64, Unit,),
    ColorValue(Color,),
 }
 
@@ -74,9 +74,7 @@ impl Parser {
    }
 
    ///Parse a rule set: '<selectors>{<declarations>}'.
-   fn parse_rule(&mut self,) -> Rule {
-      Rule { selectors: self.parse_selectors(), declarations: self.parse_declarations(), }
-   }
+   fn parse_rule(&mut self,) -> Rule { Rule { selectors: self.parse_selectors(), declarations: self.parse_declarations(), } }
 
    ///Parse a comma-separated list of selectors.
    fn parse_selectors(&mut self,) -> Vec<Selector,> {
@@ -164,7 +162,7 @@ impl Parser {
 
    fn parse_length(&mut self,) -> Value { Value::Length(self.parse_float(), self.parse_unit(),) }
 
-   fn parse_float(&mut self,) -> f32 {
+   fn parse_float(&mut self,) -> f64 {
       let s = self.cnsm_while(|c| match c {
          '0'..='9' | '.' => true,
          _ => false,
@@ -181,12 +179,7 @@ impl Parser {
 
    fn parse_color(&mut self,) -> Value {
       assert_eq!(self.cnsm_chr(), '#');
-      Value::ColorValue(Color {
-         r: self.parse_hex_pair(),
-         g: self.parse_hex_pair(),
-         b: self.parse_hex_pair(),
-         a: 255,
-      },)
+      Value::ColorValue(Color { r: self.parse_hex_pair(), g: self.parse_hex_pair(), b: self.parse_hex_pair(), a: 255, },)
    }
 
    ///Parse two hexadecimal digits.
