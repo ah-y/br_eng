@@ -41,15 +41,4 @@ impl Parser {
    pub fn cnsm_whitespace(&mut self,) { self.cnsm_while(char::is_whitespace,); }
 }
 
-fn main() {
-   let src = "<html>
-    <body>
-        <h1>Title</h1>
-        <div id=\"main\" class=\"test\">
-            <p>Hello <em>world</em>!</p>
-        </div>
-    </body>
-</html>"
-      .to_string();
-   //   dom::prettyprint(html::parse(src,),)
-}
+fn main() {}

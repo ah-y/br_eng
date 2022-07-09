@@ -35,14 +35,7 @@ impl ElementData {
    }
 }
 
-pub fn text(data: String,) -> Node {
-   Node { children: Vec::new(), node_type: NodeType::Text(data,), }
-}
+pub fn text(data: String,) -> Node { Node { children: Vec::new(), node_type: NodeType::Text(data,), } }
 pub fn elem(name: String, attrs: AttrMap, children: Vec<Node,>,) -> Node {
-   Node {
-      children,
-      node_type: NodeType::Element(ElementData { tag_name: name, attributes: attrs, },),
-   }
+   Node { children, node_type: NodeType::Element(ElementData { tag_name: name, attributes: attrs, },), }
 }
-
-//pub fn prettyprint(nod: Node,) { println!("{:#?}", nod) }

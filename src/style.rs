@@ -22,9 +22,7 @@ pub struct StyledNode<'a,> {
 
 impl<'a,> StyledNode<'a,> {
    ///Return the specified value of a property if it exists, otherwise 'Non'.
-   pub fn val(&self, nam: &str,) -> Option<css::Value,> {
-      self.specified_values.get(nam,).map(|v| v.clone(),)
-   }
+   pub fn val(&self, nam: &str,) -> Option<css::Value,> { self.specified_values.get(nam,).map(|v| v.clone(),) }
 
    ///The value of the 'display' property (defaults to inline).
    pub fn display(&self,) -> Display {
@@ -57,18 +55,11 @@ fn matches_ss(elem: &dom::ElementData, slctr: &css::SimpleSelector,) -> bool {
 ///If 'rule' matches 'elem', return a 'MatchedRule'. Otherwise return 'None'.
 fn match_rule<'a,>(elem: &dom::ElementData, rule: &'a css::Rule,) -> Option<MatchedRule<'a,>,> {
    //Find the first (highest-specificity) matching selector.
-   rule
-      .selectors
-      .iter()
-      .find(|slctr| matches(elem, slctr,),)
-      .map(|slctr| (slctr.specificity(), rule,),)
+   rule.selectors.iter().find(|slctr| matches(elem, slctr,),).map(|slctr| (slctr.specificity(), rule,),)
 }
 
 ///Find all CSS rules that match the given element
-fn matching_rules<'a,>(
-   elem: &dom::ElementData,
-   stylesheet: &'a css::Stylesheet,
-) -> Vec<MatchedRule<'a,>,> {
+fn matching_rules<'a,>(elem: &dom::ElementData, stylesheet: &'a css::Stylesheet,) -> Vec<MatchedRule<'a,>,> {
    stylesheet.rules.iter().filter_map(|rule| match_rule(elem, rule,),).collect()
 }
 

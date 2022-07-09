@@ -41,7 +41,6 @@ struct LayoutBox<'a,> {
 ///A box can be a block node, an inline node, OR an anonymous block box
 #[derive(Clone,)]
 enum BoxType<'a,> {
-   Test(String,),
    BlockNode(&'a style::StyledNode<'a,>,),
    InlineNode(&'a style::StyledNode<'a,>,),
    AnonymousBlock,
@@ -49,28 +48,22 @@ enum BoxType<'a,> {
 
 impl<'a,> LayoutBox<'a,> {
    ///Constructor
-   fn new(box_type: BoxType,) -> LayoutBox {
-      LayoutBox { box_type, dimensions: Default::default(), children: vec![], }
-   }
+   fn new(box_type: BoxType,) -> LayoutBox { LayoutBox { box_type, dimensions: Default::default(), children: vec![], } }
 
    ///Where a new inline child should go.
-   fn get_inline_container(&'a mut self,) -> &'a mut LayoutBox<'a,> {
-      todo!(
-         "-----------------------------------------------------------
-             How about move self?
-             Own self's ownership and must return LayoutBox
-             ------------------------------------------------------------"
-      );
-      let ano = LayoutBox::new(BoxType::AnonymousBlock,);
-      match &self.box_type {
+   fn get_inline_container(self,) -> LayoutBox<'a,> {
+      match self.box_type {
          BoxType::BlockNode(_,) => {
             //If we've just generated an anonymous block box, keep using it.
             //Otherwise, create a new one.
             match self.children.last() {
-               Some(&LayoutBox { box_type: BoxType::AnonymousBlock, .. },) => {}
-               _ => self.children.push(ano.clone(),),
+               Some(&LayoutBox { box_type: BoxType::AnonymousBlock, .. },) => self.children.last().unwrap().clone(),
+               _ => {
+                  let mut cl = self;
+                  cl.children.push(LayoutBox::new(BoxType::AnonymousBlock,),);
+                  cl.children.last().unwrap().clone()
+               }
             }
-            self.children.last_mut().unwrap()
          }
          _ => self,
       }
@@ -80,11 +73,6 @@ impl<'a,> LayoutBox<'a,> {
 ///Build the tree of LayoutBoxes,
 ///but don't perform any layout calculations yet.
 fn build_layout_tree<'a,>(style_node: &'a style::StyledNode<'a,>,) -> LayoutBox<'a,> {
-   todo!(
-      "----------------------------------------------------------
-          Use clone where borrow checker warning
-          -------------------------------------------------------------"
-   );
    use {style::Display::*, BoxType::*};
    //Create the root box.
    let mut root = LayoutBox::new(match style_node.display() {
@@ -97,18 +85,12 @@ fn build_layout_tree<'a,>(style_node: &'a style::StyledNode<'a,>,) -> LayoutBox<
       root = match child.display() {
          Block | Inline => {
             let mut cl = root.clone();
-            cl.get_inline_container().children.push(build_layout_tree(&child,),);
-            cl.clone()
+            let mut ret = cl.get_inline_container();
+            ret.children.push(build_layout_tree(&child,),);
+            ret
          }
          _ => root,
       };
    }
    root
-}
-
-#[test]
-///This test's result was failed
-fn box_cl() {
-   let mut org = LayoutBox::new(BoxType::AnonymousBlock,);
-   org.clone().box_type = BoxType::Test(String::from("success",),);
 }
