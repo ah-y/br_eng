@@ -96,13 +96,17 @@ impl<'a,> LayoutBox<'a,> {
 
    ///Calculate width of block
    fn calc_width(&mut self, cntin_blck: Dimensions,) {
+      use css::{
+         Unit,
+         Value::{Keyword, Length},
+      };
       let style = self.get_style_node();
       //'width' has initial value 'auto'
-      let auto = css::Value::Keyword("auto".to_string(),);
+      let auto = Keyword("auto".to_string(),);
       let mut width = style.val("width",).unwrap_or(auto.clone(),);
 
       //margin, border, padding have init value 0.
-      let zero = css::Value::Length(0.0, Px,);
+      let zero = Length(0.0, Unit::Px,);
 
       let mut margin_left = style.lookup("margin-left", "margin", &zero,);
       let mut margin_right = style.lookup("margin-right", "margin", &zero,);
@@ -118,14 +122,41 @@ impl<'a,> LayoutBox<'a,> {
       //if width!=auto & total is wider than container, treat auto margins as 0.
       if width != auto && total > cntin_blck.content.width {
          if margin_left == auto {
-            margin_left = css::Value::Length(0.0, Px,);
+            margin_left = Length(0.0, Unit::Px,);
          }
          if margin_right == auto {
-            margin_right = css::Value::Length(0.0, Px,);
+            margin_right = Length(0.0, Unit::Px,);
          }
       }
       //if 'flow' is +, it's underflow. 'flow' is -, it's overflow.
       let flow = cntin_blck.content.width - total;
+      match (width == auto, margin_left == auto, margin_right = auto,) {
+         //If the values are overconstrained, calculate margin_right.
+         (false, false, false,) => margin_right = Length(margin_right.to_px() + flow, Unit::Px,),
+         //If exactly one size is auto, its used value follows from the equality.
+         (false, false, true,) => margin_right = Length(flow, Unit::Px,),
+         (false, true, false,) => margin_left = Length(flow, Unit::Px,),
+         //If width is set to auto, any other auto values become 0.
+         (true, ..,) => {
+            if margin_left == auto {
+               margin_left = Length(0.0, Unit::Px,);
+            }
+            if margin_right == auto {
+               margin_right = Length(0.0, Unit::Px,);
+            }
+            if flow >= 0.0 {
+               width = Length(flow, Unit::Px,);
+            } else {
+               width = Length(0.0, Unit::Px,);
+               margin_right = Length(margin_right.to_px() + flow, Unit::Px,);
+            }
+         }
+         //If margin_left and margin_right are both auto, their used values are equal.
+         (false, true, true,) => {
+            margin_left = Length(flow / 2.0, Unit::Px,);
+            margin_right = Length(flow / 2.0, Unit::Px,);
+         }
+      }
    }
 }
 

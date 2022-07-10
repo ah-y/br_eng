@@ -47,7 +47,7 @@ pub enum Value {
 }
 
 #[derive(Clone,)]
-enum Unit {
+pub enum Unit {
    Px,
 }
 
