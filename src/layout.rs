@@ -12,6 +12,17 @@ struct Dimensions {
    margin:  EdgeSizes,
 }
 
+impl Dimensions {
+   ///The area covered by the content area plus its padding.
+   fn padding_box(self,) -> Rct { self.content.expanded_by(self.padding,) }
+
+   ///The area covered by the content area plus padding and borders.
+   fn border_box(self,) -> Rct { self.padding_box().expanded_by(self.border,) }
+
+   ///The area covered by the content area plus padding, borders, and margin.
+   fn margin_box(self,) -> Rct { self.border_box().expanded_by(self.margin,) }
+}
+
 ///Rectangular module
 #[derive(Default, Clone,)]
 struct Rct {
@@ -19,6 +30,17 @@ struct Rct {
    y:      f64,
    width:  f64,
    height: f64,
+}
+
+impl Rct {
+   fn expanded_by(self, edge: EdgeSizes,) -> Rct {
+      Rct {
+         x:      self.x - edge.left,
+         y:      self.y - edge.top,
+         width:  self.width + edge.left + edge.right,
+         height: self.height + edge.top + edge.bottom,
+      }
+   }
 }
 
 ///Positions of 4 corners
@@ -157,6 +179,43 @@ impl<'a,> LayoutBox<'a,> {
             margin_right = Length(flow / 2.0, Unit::Px,);
          }
       }
+   }
+
+   fn calc_position(&mut self, cntin_blck: Dimensions,) {
+      let style = self.get_style_node();
+      let d = &mut self.dimensions;
+
+      //margin, border, and padding have init value 0.
+      let zero = css::Value::Length(0.0, css::Unit::Px,);
+
+      //If margin_top or margin_bottom is 'auto', the used value is zero.
+      d.margin.top = style.lookup("margin-top", "margin", &zero,).to_px();
+      d.margin.bottom = style.lookup("margin-bottom", "margin", &zero,).to_px();
+      d.border.top = style.lookup("border-top-width", "border-width", &zero,).to_px();
+      d.border.bottom = style.lookup("border-bottom-width", "border-width", &zero,).to_px();
+      d.padding.top = style.lookup("padding-top", "padding", &zero,).to_px();
+      d.padding.bottom = style.lookup("padding-bottom", "padding", &zero,).to_px();
+
+      d.content.x = cntin_blck.content.x + d.margin.left + d.border.left + d.padding.left;
+      d.content.y = cntin_blck.content.height + cntin_blck.content.y + d.margin.top + d.border.top + d.padding.top;
+   }
+
+   fn layout_children(&mut self,) {
+      let d = &mut self.dimensions;
+      for child in &mut self.children {
+         child.layout(*d,);
+         //Track the height so each child is laid out below the previous content.
+         d.content.height = d.content.height + child.dimensions.margin_box().height;
+      }
+   }
+
+   ///If the height is set to an explicit lenght, use that exact lenght.
+   /// Otherwise, just keep the value set by 'layout_block_children'.
+   fn calc_height(&mut self,) {
+      if let Some(css::Value::Length(h, Px,),) = self.get_style_node().val("height",) {
+         self.dimensions.content.height = h;
+      }
+
    }
 }
 
