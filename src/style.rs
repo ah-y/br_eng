@@ -36,6 +36,10 @@ impl<'a,> StyledNode<'a,> {
          _ => Display::Inline,
       }
    }
+
+   pub fn lookup(&self, nam: &str, fallback_nam: &str, dflt: &css::Value,) -> css::Value {
+      self.val(nam,).unwrap_or_else(|| self.val(fallback_nam,).unwrap_or_else(|| dflt.clone(),),)
+   }
 }
 
 ///Tell whether selector matches element

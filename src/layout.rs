@@ -3,37 +3,37 @@ use crate::{css, style};
 
 ///CSS box model. All sizes are in px.
 #[derive(Default, Clone,)]
-struct Dimensions {
+pub struct Dimensions {
    //Position of the content area  relative to the document origin:
-   content: Rct,
+   content:    Rct,
    //Surrounding edges:
-   padding: EdgeSizes,
-   border:  EdgeSizes,
-   margin:  EdgeSizes,
+   padding:    EdgeSizes,
+   pub border: EdgeSizes,
+   margin:     EdgeSizes,
 }
 
 impl Dimensions {
    ///The area covered by the content area plus its padding.
-   fn padding_box(self,) -> Rct { self.content.expanded_by(self.padding,) }
+   fn padding_box(&self,) -> Rct { self.content.expanded_by(&self.padding,) }
 
    ///The area covered by the content area plus padding and borders.
-   fn border_box(self,) -> Rct { self.padding_box().expanded_by(self.border,) }
+   pub fn border_box(&self,) -> Rct { self.padding_box().expanded_by(&self.border,) }
 
    ///The area covered by the content area plus padding, borders, and margin.
-   fn margin_box(self,) -> Rct { self.border_box().expanded_by(self.margin,) }
+   fn margin_box(&self,) -> Rct { self.border_box().expanded_by(&self.margin,) }
 }
 
 ///Rectangular module
 #[derive(Default, Clone,)]
-struct Rct {
-   x:      f64,
-   y:      f64,
-   width:  f64,
-   height: f64,
+pub struct Rct {
+   pub x:      f64,
+   pub y:      f64,
+   pub width:  f64,
+   pub height: f64,
 }
 
 impl Rct {
-   fn expanded_by(self, edge: EdgeSizes,) -> Rct {
+   fn expanded_by(&self, edge: &EdgeSizes,) -> Rct {
       Rct {
          x:      self.x - edge.left,
          y:      self.y - edge.top,
@@ -45,24 +45,24 @@ impl Rct {
 
 ///Positions of 4 corners
 #[derive(Default, Clone,)]
-struct EdgeSizes {
-   left:   f64,
-   right:  f64,
-   top:    f64,
-   bottom: f64,
+pub struct EdgeSizes {
+   pub left:   f64,
+   pub right:  f64,
+   pub top:    f64,
+   pub bottom: f64,
 }
 
 ///The layout tree is a collection of layoutboxes. It contains boxes as child
 #[derive(Clone,)]
-struct LayoutBox<'a,> {
-   box_type:   BoxType<'a,>,
-   dimensions: Dimensions,
-   children:   Vec<LayoutBox<'a,>,>,
+pub struct LayoutBox<'a,> {
+   pub box_type:   BoxType<'a,>,
+   pub dimensions: Dimensions,
+   pub children:   Vec<LayoutBox<'a,>,>,
 }
 
 ///A box can be a block node, an inline node, OR an anonymous block box
 #[derive(Clone,)]
-enum BoxType<'a,> {
+pub enum BoxType<'a,> {
    BlockNode(&'a style::StyledNode<'a,>,),
    InlineNode(&'a style::StyledNode<'a,>,),
    AnonymousBlock,
@@ -70,7 +70,17 @@ enum BoxType<'a,> {
 
 impl<'a,> LayoutBox<'a,> {
    ///Constructor
-   fn new(box_type: BoxType,) -> LayoutBox { LayoutBox { box_type, dimensions: Default::default(), children: vec![], } }
+   fn new(box_type: BoxType,) -> LayoutBox {
+      LayoutBox { box_type, dimensions: Default::default(), children: vec![], }
+   }
+
+   ///getter of style_node which is contained in box_type
+   fn get_style_node(&self,) -> &'a style::StyledNode<'a,> {
+      match &self.box_type {
+         BoxType::BlockNode(nod,) | BoxType::InlineNode(nod,) => nod,
+         BoxType::AnonymousBlock => panic!("AnonymousBlock has no style node",),
+      }
+   }
 
    ///Where a new inline child should go.
    fn get_inline_container(self,) -> LayoutBox<'a,> {
@@ -79,7 +89,8 @@ impl<'a,> LayoutBox<'a,> {
             //If we've just generated an anonymous block box, keep using it.
             //Otherwise, create a new one.
             match self.children.last() {
-               Some(&LayoutBox { box_type: BoxType::AnonymousBlock, .. },) => self.children.last().unwrap().clone(),
+               Some(&LayoutBox { box_type: BoxType::AnonymousBlock, .. },) =>
+                  self.children.last().unwrap().clone(),
                _ => {
                   let mut cl = self;
                   cl.children.push(LayoutBox::new(BoxType::AnonymousBlock,),);
@@ -92,13 +103,7 @@ impl<'a,> LayoutBox<'a,> {
    }
 
    ///Layout a box and its descendants.
-   fn layout(&mut self, cntin_blck: Dimensions,) {
-      todo!(
-         "------------------------------------------------------
-       [ImplLater]
-           InlineNode & AnonymousBlock
-             ------------------------------------------------------"
-      );
+   fn layout(&mut self, cntin_blck: &Dimensions,) {
       match self.box_type {
          BoxType::BlockNode(_,) => self.layout_block(cntin_blck,),
          BoxType::InlineNode(_,) => {}
@@ -107,9 +112,9 @@ impl<'a,> LayoutBox<'a,> {
    }
 
    ///Block's width depends on its parent, height depends on its children
-   fn layout_block(&mut self, cntin_blck: Dimensions,) {
+   fn layout_block(&mut self, cntin_blck: &Dimensions,) {
       //Calculate parent's width at first
-      self.calc_width(cntin_blck,);
+      self.calc_width(&cntin_blck,);
       self.calc_position(cntin_blck,);
       self.layout_children();
       //Calculate parent's height at last
@@ -117,7 +122,7 @@ impl<'a,> LayoutBox<'a,> {
    }
 
    ///Calculate width of block
-   fn calc_width(&mut self, cntin_blck: Dimensions,) {
+   fn calc_width(&mut self, cntin_blck: &Dimensions,) {
       use css::{
          Unit,
          Value::{Keyword, Length},
@@ -137,10 +142,18 @@ impl<'a,> LayoutBox<'a,> {
       let padding_left = style.lookup("padding-left", "padding", &zero,);
       let padding_right = style.lookup("padding-right", "padding", &zero,);
 
-      let total = [&margin_left, &margin_right, &border_left, &border_right, &padding_left, &padding_right, &width,]
-         .iter()
-         .map(|v| v.to_px(),)
-         .sum();
+      let total = [
+         &margin_left,
+         &margin_right,
+         &border_left,
+         &border_right,
+         &padding_left,
+         &padding_right,
+         &width,
+      ]
+      .iter()
+      .map(|v| v.to_px(),)
+      .sum::<f64>();
       //if width!=auto & total is wider than container, treat auto margins as 0.
       if width != auto && total > cntin_blck.content.width {
          if margin_left == auto {
@@ -152,7 +165,7 @@ impl<'a,> LayoutBox<'a,> {
       }
       //if 'flow' is +, it's underflow. 'flow' is -, it's overflow.
       let flow = cntin_blck.content.width - total;
-      match (width == auto, margin_left == auto, margin_right = auto,) {
+      match (width == auto, margin_left == auto, margin_right == auto,) {
          //If the values are overconstrained, calculate margin_right.
          (false, false, false,) => margin_right = Length(margin_right.to_px() + flow, Unit::Px,),
          //If exactly one size is auto, its used value follows from the equality.
@@ -181,7 +194,7 @@ impl<'a,> LayoutBox<'a,> {
       }
    }
 
-   fn calc_position(&mut self, cntin_blck: Dimensions,) {
+   fn calc_position(&mut self, cntin_blck: &Dimensions,) {
       let style = self.get_style_node();
       let d = &mut self.dimensions;
 
@@ -197,13 +210,17 @@ impl<'a,> LayoutBox<'a,> {
       d.padding.bottom = style.lookup("padding-bottom", "padding", &zero,).to_px();
 
       d.content.x = cntin_blck.content.x + d.margin.left + d.border.left + d.padding.left;
-      d.content.y = cntin_blck.content.height + cntin_blck.content.y + d.margin.top + d.border.top + d.padding.top;
+      d.content.y = cntin_blck.content.height
+         + cntin_blck.content.y
+         + d.margin.top
+         + d.border.top
+         + d.padding.top;
    }
 
    fn layout_children(&mut self,) {
       let d = &mut self.dimensions;
       for child in &mut self.children {
-         child.layout(*d,);
+         child.layout(d,);
          //Track the height so each child is laid out below the previous content.
          d.content.height = d.content.height + child.dimensions.margin_box().height;
       }
@@ -212,10 +229,9 @@ impl<'a,> LayoutBox<'a,> {
    ///If the height is set to an explicit lenght, use that exact lenght.
    /// Otherwise, just keep the value set by 'layout_block_children'.
    fn calc_height(&mut self,) {
-      if let Some(css::Value::Length(h, Px,),) = self.get_style_node().val("height",) {
+      if let Some(css::Value::Length(h, css::Unit::Px,),) = self.get_style_node().val("height",) {
          self.dimensions.content.height = h;
       }
-
    }
 }
 

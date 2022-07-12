@@ -39,24 +39,33 @@ pub struct Declaration {
    pub val: Value,
 }
 
-#[derive(Clone,)]
+#[derive(Clone, PartialEq,)]
 pub enum Value {
    Keyword(String,),
    Length(f64, Unit,),
    ColorValue(Color,),
 }
 
-#[derive(Clone,)]
+impl Value {
+   pub fn to_px(&self,) -> f64 {
+      match self {
+         Value::Length(f, Unit::Px,) => *f,
+         _ => 0.0,
+      }
+   }
+}
+
+#[derive(PartialEq, Clone,)]
 pub enum Unit {
    Px,
 }
 
-#[derive(Clone,)]
-struct Color {
-   r: u8,
-   g: u8,
-   b: u8,
-   a: u8,
+#[derive(Clone, PartialEq,)]
+pub struct Color {
+   pub r: u8,
+   pub g: u8,
+   pub b: u8,
+   pub a: u8,
 }
 
 impl Parser {
