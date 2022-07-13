@@ -22,6 +22,30 @@ impl Canvas {
       let white = css::Color { r: 255, g: 255, b: 255, a: 255, };
       Canvas { pixels: vec![white; height * width], width, height, }
    }
+
+   ///Here, we just paint a rectangler
+   fn paint_item(&mut self, item: &DisplayCommand,) {
+      match &item {
+         &DisplayCommand::SolidColor(color, rct,) => {
+            let x0 = rct.x.clamp(0.0, self.width as f64,) as usize;
+            let y0 = rct.y.clamp(0.0, self.height as f64,) as usize;
+            let x1 = (rct.x + rct.width).clamp(0.0, self.width as f64,) as usize;
+            let y1 = (rct.y + rct.height).clamp(0.0, self.height as f64,) as usize;
+            for y in y0..y1 {
+               for x in x0..x1 {
+                  todo!(
+                     "------------------------------------------------------
+                   [AddLayeringOption]
+                       Alpha compositing with existing pixel
+                         ------------------------------------------------------"
+                  );
+                  self.pixels[x + y * self.width] = *color;
+               }
+            }
+         }
+         _ => {}
+      }
+   }
 }
 
 ///Constructor of DisplayList. With init, draw empty layout box
@@ -47,6 +71,8 @@ fn render_bg(list: &mut DisplayList, layout_box: &layout::LayoutBox,) {
       .map(|clr| list.push(DisplayCommand::SolidColor(clr, layout_box.dimensions.border_box(),),),);
 }
 
+///If AnonymousBlock or not specified color, return None. Else, return
+/// specified color
 fn get_color(layout_box: &layout::LayoutBox, nam: &str,) -> Option<css::Color,> {
    match layout_box.box_type {
       layout::BoxType::BlockNode(style,) | layout::BoxType::InlineNode(style,) => match style.val(nam,) {
@@ -57,6 +83,7 @@ fn get_color(layout_box: &layout::LayoutBox, nam: &str,) -> Option<css::Color,> 
    }
 }
 
+///Render borders
 fn render_borders(list: &mut DisplayList, layout_box: &layout::LayoutBox,) {
    let clr = match get_color(layout_box, "border-color",) {
       Some(clr,) => clr,
