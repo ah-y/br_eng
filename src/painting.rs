@@ -10,10 +10,10 @@ enum DisplayCommand {
 }
 
 ///Store pixels which is converted from DisplayCommand
-struct Canvas {
-   pixels: Vec<css::Color,>,
-   width:  usize,
-   height: usize,
+pub struct Canvas {
+   pub pixels: Vec<css::Color,>,
+   pub width:  usize,
+   pub height: usize,
 }
 
 impl Canvas {
@@ -33,13 +33,7 @@ impl Canvas {
             let y1 = (rct.y + rct.height).clamp(0.0, self.height as f64,) as usize;
             for y in y0..y1 {
                for x in x0..x1 {
-                  todo!(
-                     "------------------------------------------------------
-                   [AddLayeringOption]
-                       Alpha compositing with existing pixel
-                         ------------------------------------------------------"
-                  );
-                  self.pixels[x + y * self.width] = *color;
+                  self.pixels[x + y * self.width] = color.clone();
                }
             }
          }
@@ -123,4 +117,14 @@ fn render_borders(list: &mut DisplayList, layout_box: &layout::LayoutBox,) {
       width:  border_box.width,
       height: d.border.bottom,
    },),);
+}
+
+///Paint a tree of Layout Boxes to an array of pixels.
+pub fn paint(layout_root: &layout::LayoutBox, bounds: layout::Rct,) -> Canvas {
+   let disp_lst = build_display_list(layout_root,);
+   let mut canvas = Canvas::new(bounds.width as usize, bounds.height as usize,);
+   for item in disp_lst {
+      canvas.paint_item(&item,);
+   }
+   canvas
 }

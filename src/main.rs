@@ -5,6 +5,10 @@ mod layout;
 mod painting;
 mod style;
 
+use std::fs;
+
+use image;
+
 struct Parser {
    pos: usize,
    inp: String,
@@ -42,4 +46,25 @@ impl Parser {
    pub fn cnsm_whitespace(&mut self,) { self.cnsm_while(char::is_whitespace,); }
 }
 
-fn main() {}
+fn main() {
+   //read input files
+   let html_file = fs::read_to_string("examples/test.html",).unwrap();
+   let css_file = fs::read_to_string("examples/test.css",).unwrap();
+   //Since we don't have an actual window, hardcode the 'viewport' size
+   let mut viewport: layout::Dimensions = Default::default();
+   viewport.content.width = 800.0;
+   viewport.content.height = 600.0;
+   //Parse and rendering
+   let root_node = html::parse(html_file,);
+   let stylesheet = css::parse(css_file,);
+   let style_root = style::style_tree(&root_node, &stylesheet,);
+   let layout_root = layout::layout_tree(&style_root, viewport.clone(),);
+   //Create output file
+   let board = painting::paint(&layout_root, viewport.content,);
+   let (w, h,) = (board.width as u32, board.height as u32,);
+   let img = image::ImageBuffer::from_fn(w, h, |x, y| {
+      let clr = &board.pixels[(y * w + x) as usize];
+      image::Rgba([clr.r, clr.g, clr.b, clr.a,],)
+   },);
+   img.save("output.png",).unwrap();
+}

@@ -208,3 +208,8 @@ fn valid_idf_chr(c: char,) -> bool {
       _ => false,
    }
 }
+
+pub fn parse(src: String,) -> Stylesheet {
+   let mut parser = Parser { pos: 0, inp: src, };
+   Stylesheet { rules: parser.parse_rules(), }
+}

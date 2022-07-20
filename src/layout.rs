@@ -5,11 +5,11 @@ use crate::{css, style};
 #[derive(Default, Clone,)]
 pub struct Dimensions {
    //Position of the content area  relative to the document origin:
-   content:    Rct,
+   pub content: Rct,
    //Surrounding edges:
-   padding:    EdgeSizes,
-   pub border: EdgeSizes,
-   margin:     EdgeSizes,
+   padding:     EdgeSizes,
+   pub border:  EdgeSizes,
+   margin:      EdgeSizes,
 }
 
 impl Dimensions {
@@ -70,9 +70,7 @@ pub enum BoxType<'a,> {
 
 impl<'a,> LayoutBox<'a,> {
    ///Constructor
-   fn new(box_type: BoxType,) -> LayoutBox {
-      LayoutBox { box_type, dimensions: Default::default(), children: vec![], }
-   }
+   fn new(box_type: BoxType,) -> LayoutBox { LayoutBox { box_type, dimensions: Default::default(), children: vec![], } }
 
    ///getter of style_node which is contained in box_type
    fn get_style_node(&self,) -> &'a style::StyledNode<'a,> {
@@ -89,8 +87,7 @@ impl<'a,> LayoutBox<'a,> {
             //If we've just generated an anonymous block box, keep using it.
             //Otherwise, create a new one.
             match self.children.last() {
-               Some(&LayoutBox { box_type: BoxType::AnonymousBlock, .. },) =>
-                  self.children.last().unwrap().clone(),
+               Some(&LayoutBox { box_type: BoxType::AnonymousBlock, .. },) => self.children.last().unwrap().clone(),
                _ => {
                   let mut cl = self;
                   cl.children.push(LayoutBox::new(BoxType::AnonymousBlock,),);
@@ -142,18 +139,10 @@ impl<'a,> LayoutBox<'a,> {
       let padding_left = style.lookup("padding-left", "padding", &zero,);
       let padding_right = style.lookup("padding-right", "padding", &zero,);
 
-      let total = [
-         &margin_left,
-         &margin_right,
-         &border_left,
-         &border_right,
-         &padding_left,
-         &padding_right,
-         &width,
-      ]
-      .iter()
-      .map(|v| v.to_px(),)
-      .sum::<f64>();
+      let total = [&margin_left, &margin_right, &border_left, &border_right, &padding_left, &padding_right, &width,]
+         .iter()
+         .map(|v| v.to_px(),)
+         .sum::<f64>();
       //if width!=auto & total is wider than container, treat auto margins as 0.
       if width != auto && total > cntin_blck.content.width {
          if margin_left == auto {
@@ -210,11 +199,7 @@ impl<'a,> LayoutBox<'a,> {
       d.padding.bottom = style.lookup("padding-bottom", "padding", &zero,).to_px();
 
       d.content.x = cntin_blck.content.x + d.margin.left + d.border.left + d.padding.left;
-      d.content.y = cntin_blck.content.height
-         + cntin_blck.content.y
-         + d.margin.top
-         + d.border.top
-         + d.padding.top;
+      d.content.y = cntin_blck.content.height + cntin_blck.content.y + d.margin.top + d.border.top + d.padding.top;
    }
 
    fn layout_children(&mut self,) {
@@ -258,4 +243,14 @@ fn build_layout_tree<'a,>(style_node: &'a style::StyledNode<'a,>,) -> LayoutBox<
       };
    }
    root
+}
+
+///Transform a style tree into a layout tree
+pub fn layout_tree<'a,>(node: &'a style::StyledNode<'a,>, mut cntin_blck: Dimensions,) -> LayoutBox<'a,> {
+   //The layout algorithm expects the container height to start at 0
+   cntin_blck.content.height = 0.0;
+
+   let mut root_box = build_layout_tree(node,);
+   root_box.layout(&cntin_blck,);
+   root_box
 }
